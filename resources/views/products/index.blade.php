@@ -100,9 +100,9 @@
                 serverSide: true,
                 responsive: true,
                 // filters = true,
-                order: [
-                    [0, 'desc']
-                ],
+                // order: [
+                //     [0, 'desc']
+                // ],
                 ajax: 'products/datatable',
                 columns: [{
                         data: 'DT_RowIndex',

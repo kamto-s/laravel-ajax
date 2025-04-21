@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use App\Http\Requests\ProductRequest;
+use App\Services\ProductService;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Yajra\DataTables\Facades\DataTables;
 
 class ProductController extends Controller
 {
+    public function __construct(private ProductService $productService) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -22,23 +21,13 @@ class ProductController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(ProductRequest $request): JsonResponse
     {
         $data = $request->validated();
 
-        $data['uuid'] = Str::uuid();
-        $data['slug'] = Str::slug($data['name']);
-        Product::create($data);
+        $this->productService->create($data);
 
         return response()->json([
             'title' => 'Success',
@@ -55,19 +44,11 @@ class ProductController extends Controller
         try {
             return response()->json([
                 // 'data' => Product::find($id)
-                'data' => Product::where('uuid', $id)->firstOrFail()
+                'data' => $this->productService->getByUid($id),
             ]);
         } catch (Exception $error) {
             //throw $th;
         }
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
     }
 
     /**
@@ -78,12 +59,7 @@ class ProductController extends Controller
         $data = $request->validated();
 
         try {
-            // ubah uuid jika ubah data
-            $data['uuid'] = Str::uuid();
-
-            $data['slug'] = Str::slug($data['name']);
-            $product = Product::where('uuid', $id)->firstOrFail();
-            $product->update($data);
+            $this->productService->update($data, $id);
 
             return response()->json([
                 'title' => 'Success',
@@ -104,9 +80,7 @@ class ProductController extends Controller
      */
     public function destroy(string $id)
     {
-        // Product::destroy($id);
-        $product = Product::where('uuid', $id)->firstOrFail();
-        $product->delete();
+        $this->productService->delete($id);
 
         return response()->json([
             'title' => 'Success',
@@ -115,18 +89,8 @@ class ProductController extends Controller
         ]);
     }
 
-    public function serversideTable(Request $request)
+    public function serversideTable(): JsonResponse
     {
-        $product = Product::get();
-
-        return DataTables::of($product)
-            ->addIndexColumn()
-            ->addColumn('action', function ($row) {
-                return '<div>
-                            <button class="btn btn-warning btn-sm edit" onclick="editModal(this)" data-id="' . $row->uuid . '"> <i class="fa-solid fa-pencil"></i></button>
-                            <button class="btn btn-danger btn-sm hapus" onclick="deleteModal(this)" data-id="' . $row->uuid . '"> <i class="fa-solid fa-trash-can"></i></button>
-                        </div>';
-            })
-            ->make();
+        return $this->productService->getDatatable();
     }
 }
