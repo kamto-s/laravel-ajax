@@ -49,8 +49,12 @@
         <div class="card">
             <h5 class="card-header">Products</h5>
             <div class="card-body">
-                <a href="#" class="btn btn-primary mb-2" onclick="addModal()"> <i class="fa-solid fa-plus"></i>
-                    Add New Product</a>
+                {{-- <a href="#" class="btn btn-primary mb-2" onclick="addModal()"> <i class="fa-solid fa-plus"></i>
+                    Add New Product</a> --}}
+
+                <button type="button" onclick="addModal()" class="btn btn-primary mb-2">
+                    <i class="fa-solid fa-plus"></i> Add New Product
+                </button>
                 <table id="tableProduct" class="table table-striped" style="width:100%">
                     <thead>
                         <tr>
@@ -59,6 +63,7 @@
                             <th>Slug</th>
                             <th>Description</th>
                             <th>Price</th>
+                            <th>Image</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -119,6 +124,9 @@
                     }, {
                         data: 'price',
                         name: 'price',
+                    }, {
+                        data: 'image',
+                        name: 'image',
                     },
                     {
                         data: 'action',
@@ -242,34 +250,33 @@
                 cancelButtonText: "No, cancel!",
                 cancelButtonColor: "#d33",
             }).then((result) => {
+                if (result.value) {
+                    $.ajax({
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        type: "DELETE",
+                        url: "products/" + id,
+                        dataType: "json",
+                        success: function(response) {
+                            $('#productModal').modal('hide');
 
-                if (!result.isConfirmed) return;
+                            $('#tableProduct').DataTable().ajax.reload();
 
-                $.ajax({
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    type: "DELETE",
-                    url: "products/" + id,
-                    dataType: "json",
-                    success: function(response) {
-                        $('#productModal').modal('hide');
-
-                        $('#tableProduct').DataTable().ajax.reload();
-
-                        Swal.fire({
-                            title: response.title,
-                            text: response.text,
-                            icon: response.icon,
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.log(jqXHR.responseText);
-                        alert(jqXHR.responseText);
-                    }
-                });
+                            Swal.fire({
+                                title: response.title,
+                                text: response.text,
+                                icon: response.icon,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        },
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            console.log(jqXHR.responseText);
+                            alert(jqXHR.responseText);
+                        }
+                    });
+                }
             });
         }
     </script>

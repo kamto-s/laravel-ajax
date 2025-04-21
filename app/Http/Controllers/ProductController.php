@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
+use App\Services\ImageService;
+use App\Services\ProductService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\View\View;
 use App\Http\Requests\ProductRequest;
-use App\Services\ProductService;
-use Exception;
-use Illuminate\Http\JsonResponse;
+use App\Http\Requests\UpdateProductRequest;
 
 class ProductController extends Controller
 {
-    public function __construct(private ProductService $productService) {}
+    public function __construct(private ProductService $productService, private ImageService $imageService) {}
 
     /**
      * Display a listing of the resource.
@@ -25,15 +27,26 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request): JsonResponse
     {
-        $data = $request->validated();
+        try {
+            $data = $request->validated();
 
-        $this->productService->create($data);
+            $uploadImg = $this->imageService->uploadImage($data);
+            $data['image'] = $uploadImg;
 
-        return response()->json([
-            'title' => 'Success',
-            'text' => 'Product created successfully',
-            'icon' => 'success',
-        ]);
+            $this->productService->create($data);
+
+            return response()->json([
+                'title' => 'Success',
+                'text' => 'Product created successfully',
+                'icon' => 'success',
+            ]);
+        } catch (Exception $error) {
+            return response()->json([
+                'title' => 'Error',
+                'text' => $error->getMessage(),
+                'icon' => 'error'
+            ]);
+        }
     }
 
     /**
@@ -54,11 +67,17 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ProductRequest $request, string $id)
+    public function update(UpdateProductRequest $request, string $id)
     {
         $data = $request->validated();
+        $getImage = $this->productService->getByUid($id);
 
         try {
+            if ($request->hasFile('image')) {
+                $uploadImg = $this->imageService->uploadImage($data, $getImage->image);
+                $data['image'] = $uploadImg;
+            }
+
             $this->productService->update($data, $id);
 
             return response()->json([

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 
 class ProductService
@@ -34,6 +35,11 @@ class ProductService
     public function delete(string $id)
     {
         $product = Product::where('uuid', $id)->firstOrFail();
+
+        if ($product->image) {
+            Storage::disk('public')->delete('images/' . $product->image);
+        }
+
         return $product->delete();
     }
 
@@ -44,12 +50,18 @@ class ProductService
 
         return DataTables::of($product)
             ->addIndexColumn()
+            ->addColumn('image', function ($row) {
+                return '<div>
+                          <img src="' . asset('storage/images/' . $row->image) . '" class="img-fluid img-thumbnail" alt="' . $row->name . '" style="width: 64px; height: 64px;">
+                        </div>';
+            })
             ->addColumn('action', function ($row) {
                 return '<div>
                             <button class="btn btn-warning btn-sm edit" onclick="editModal(this)" data-id="' . $row->uuid . '"> <i class="fa-solid fa-pencil"></i></button>
                             <button class="btn btn-danger btn-sm hapus" onclick="deleteModal(this)" data-id="' . $row->uuid . '"> <i class="fa-solid fa-trash-can"></i></button>
                         </div>';
             })
+            ->rawColumns(['image', 'action'])
             ->make();
     }
 }

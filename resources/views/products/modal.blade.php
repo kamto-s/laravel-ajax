@@ -22,6 +22,11 @@
                         <label for="price" class="form-label">Price</label>
                         <input type="text" class="form-control" id="price" name="price">
                     </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Image (Max 2MB)</label>
+                        <input type="file" class="form-control" id="image" name="image"
+                            accept="image/jpeg,image/png,image/jpg,image/webp">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
