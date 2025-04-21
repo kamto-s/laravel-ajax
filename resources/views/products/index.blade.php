@@ -10,6 +10,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <title>Laravel 12 - Ajax</title>
+    {{-- fontawesome --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     {{-- datatable --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.bootstrap5.css">
@@ -41,11 +45,12 @@
             </div>
         </div>
     </nav>
-    <div class="container mt-5">
+    <div class="container my-5">
         <div class="card">
             <h5 class="card-header">Products</h5>
             <div class="card-body">
-                <a href="#" class="btn btn-primary mb-2" onclick="showModal()"> Create</a>
+                <a href="#" class="btn btn-primary mb-2" onclick="addModal()"> <i class="fa-solid fa-plus"></i>
+                    Add New Product</a>
                 <table id="tableProduct" class="table table-striped" style="width:100%">
                     <thead>
                         <tr>
@@ -83,6 +88,8 @@
     {!! JsValidator::formRequest('App\Http\Requests\ProductRequest', '#productForm') !!}
 
     <script>
+        let save_method;
+
         $(document).ready(function() {
             productsTable();
         });
@@ -92,6 +99,10 @@
                 processing: true,
                 serverSide: true,
                 responsive: true,
+                // filters = true,
+                order: [
+                    [0, 'desc']
+                ],
                 ajax: 'products/datatable',
                 columns: [{
                         data: 'DT_RowIndex',
@@ -117,28 +128,142 @@
             });
         }
 
-        function showModal() {
+        function resetValidation() {
+            $('.is-invalid').removeClass('is-invalid');
+            $('.is-valid').removeClass('is-valid');
+            $('span.invalid-feedback').remove();
+        }
+
+        // addModal
+        function addModal() {
+            // reset form
+            $('#productForm')[0].reset();
+
+            resetValidation();
+
             $('#productModal').modal('show');
+
+            save_method = 'add';
 
             $('.modal-title').text('Add New Product');
             $('.btnSubmit').text('Create');
+        }
 
-            $('#productForm').on('submit', function(e) {
-                e.preventDefault();
+        // FORM - store/ update
+        $('#productForm').on('submit', function(e) {
+            e.preventDefault();
 
-                const formData = new FormData(this)
+            const formData = new FormData(this)
+
+            var url, method;
+
+            // default post
+            url = "products";
+            method = "POST";
+
+            // if method add
+            if (save_method == 'edit') {
+                url = 'products/' + $('#id').val();
+                formData.append('_method', 'PUT')
+            }
+
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                type: method,
+                url: url,
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#productModal').modal('hide');
+                    $('#tableProduct').DataTable().ajax.reload();
+
+                    Swal.fire({
+                        title: response.title,
+                        text: response.text,
+                        icon: response.icon,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(jqXHR.responseText);
+                    // alert("Error: " + jqXHR.responseText);
+                }
+            });
+        });
+
+        // editModal
+        function editModal(e) {
+            let id = e.getAttribute('data-id');
+
+            save_method = 'edit';
+
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                type: "GET",
+                url: "products/" + id,
+                success: function(response) {
+                    let result = response.data;
+
+                    $('#name').val(result.name)
+                    $('#description').val(result.description)
+                    $('#price').val(result.price)
+                    $('#id').val(result.uuid)
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(jqXHR.responseText);
+                    alert("Error displaying data: " + jqXHR.responseText);
+                }
+            });
+
+            resetValidation();
+            $('#productModal').modal('show');
+
+            $('.modal-title').text('Update Product');
+            $('.btnSubmit').text('Update');
+        }
+
+        // deleteModal
+        function deleteModal(e) {
+            let id = e.getAttribute('data-id');
+
+            Swal.fire({
+                title: "Delete?",
+                text: "Are you sure you want to delete this product?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Yes, delete it!",
+                confirmButtonColor: "#3085d6",
+                cancelButtonText: "No, cancel!",
+                cancelButtonColor: "#d33",
+            }).then((result) => {
+
+                if (!result.isConfirmed) return;
 
                 $.ajax({
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
-                    type: "POST",
-                    url: "products",
-                    data: formData,
-                    processData: false,
-                    contentType: false,
+                    type: "DELETE",
+                    url: "products/" + id,
+                    dataType: "json",
                     success: function(response) {
-                        alert(response.message);
+                        $('#productModal').modal('hide');
+
+                        $('#tableProduct').DataTable().ajax.reload();
+
+                        Swal.fire({
+                            title: response.title,
+                            text: response.text,
+                            icon: response.icon,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
                         console.log(jqXHR.responseText);
