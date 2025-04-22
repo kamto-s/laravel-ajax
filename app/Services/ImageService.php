@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ImageService
 {
-    public function uploadImage(array $data, string $oldImg = null)
+    public function uploadImage(array $data, ?string $oldImg = null)
     {
         $img = $data['image'];
         $img->store('images', 'public');
