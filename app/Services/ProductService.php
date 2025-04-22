@@ -52,7 +52,7 @@ class ProductService
             ->addIndexColumn()
             ->addColumn('image', function ($row) {
                 return '<div>
-                          <img src="' . asset('storage/images/' . $row->image) . '" class="img-fluid img-thumbnail" alt="' . $row->name . '" style="width: 64px; height: 64px;">
+                          <img src="' . asset('storage/images/' . $row->image) . '" class="img-fluid img-thumbnail" alt="' . $row->name . '" style="width: 64px; height: 64px;object-fit: cover;">
                         </div>';
             })
             ->addColumn('action', function ($row) {
